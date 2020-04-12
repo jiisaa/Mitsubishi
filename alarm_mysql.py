@@ -39,7 +39,7 @@ if res > 38:
     msg['To'] = you
 
 ## Sähköpstin sisältö, tekstinä ja HTML versiona.
-    text = "Hei!\n\nMIME viestit eivät ole tuottuja."
+    text = "Hei!\n\nMIME viestit eivät ole tuettuja."
     html = """\
     <html>
       <head></head>
@@ -60,7 +60,7 @@ if res > 38:
     msg.attach(part2)
 
 ## Lähetetään sähköposti
-    s = smtplib.SMTP('Operaattorisi lätevän postin palvelin')
+    s = smtplib.SMTP('Operaattorisi lähtevän postin palvelin')
     s.sendmail(me, you, msg.as_string())
     s.quit()
 
