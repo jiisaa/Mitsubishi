@@ -39,7 +39,7 @@ if r107 > 38:
     msg['To'] = you
 
 ## Sähköpstin sisältö, tekstinä ja HTML versiona.
-    text = "Hei!\n\nMIME viestit eivät ole tuottuja."
+    text = "Hei!\n\nMIME viestit eivät ole tuettuja."
     html = """\
     <html>
       <head></head>
