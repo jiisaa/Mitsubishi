@@ -60,7 +60,7 @@ if r107 > 38:
     msg.attach(part2)
 
 ## Lähetetään sähköposti
-    s = smtplib.SMTP('Operaattorisi lähettävän postin palvelin tähän')
+    s = smtplib.SMTP('Operaattorisi lätevän postin palvelin')
     s.sendmail(me, you, msg.as_string())
     s.quit()
 
