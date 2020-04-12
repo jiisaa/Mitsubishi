@@ -1,5 +1,5 @@
 # Mitsubishi
-Mitsubishi Ecodan data logging
+Mitsubishi Ecodan data loggausta
 
 Mitsubishin dataloggausta Talologgerin avulla sekä simppelit koodit mitä voidaan ajaa esim. Crontabilla ja lähettää hälyjä suoraan Mitsulta modbus väylän tai tietokannan kautta luetuista arvoista sähköpostiin.
 
