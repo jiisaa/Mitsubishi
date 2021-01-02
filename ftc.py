@@ -25,8 +25,8 @@ r107 = instrument.read_register(107)
 ## Target temp change 0,5c below Flow Temp
 tt = r107 - 50
 
-## If Heating is on, target temp not same already set, we are not going over decided Flow Temp (in this case 29.50C) limit, Defrosting is off (Normal) and Heating is On, set Flow Temp to new Target temp, tt
-if r26 == 2 and tt != r32 and tt < 2850 and r67 == 0 and r26 !=0:
+## If Heating is on, target temp not same already set, we are not going over decided Flow Temp (in this case 29C) limit, Defrosting is off (Normal) and Heating is On, set Flow Temp to new Target temp, tt
+if r26 == 2 and tt != r32 and tt < 2950 and r67 == 0 and r26 !=0:
   instrument.write_register(32, tt, functioncode=6)
   print("New Flow Temperature set", (tt), "set")
 
