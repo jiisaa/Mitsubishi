@@ -4,4 +4,6 @@ Mitsubishi Ecodan modbus dataloggausta Talologgerin avulla sekä simppelit koodi
 
 cop.py laskee Mitsulta saatujen tietojen perusteella lämmitys ja käyttöveden päivittäisen COP:n ja tallentaa sen samaan kantaan TaloLoggerin muiden mittausten joukkoon Crontabilla ajastettuna päivittäin puolenyön jälkeen.
 
+ftc.py ohjaa Mitsun lämpökäyrää halutun hystereesin avulla lennosta Modbusväylän kautta.
+
 Koodit eivät varmasti ole kaikkien sääntöjen mukaisia, mutta toimivat omassa käytössäni. :)
