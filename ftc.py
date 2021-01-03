@@ -30,8 +30,8 @@ if r26 == 2 and tt != r32 and tt < 2950 and r67 == 0 and r26 !=0:
   instrument.write_register(32, tt, functioncode=6)
   print("New Flow Temperature set", (tt), "set")
 
-## If Heating is off and Defrosting is off (Normal) we think system has reached maximum set temp and system has turn off heating and is waiting for hysteresis to go down, set Flow temp to min
-elif r26 == 0 and r67 != 2:
+## If Heating is off, Defrosting is off (Normal) and Flow Temp is not 26C already we think system has reached maximum set temp and system has turn off heating and is waiting for hysteresis to go down, set Flow temp to min if not already set
+elif r26 == 0 and r67 != 2 and r32 != 2600:
   instrument.write_register(32, 2600, functioncode=6)
   print("Heating off, set Flow Temperature to 26")
 
