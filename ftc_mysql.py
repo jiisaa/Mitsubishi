@@ -373,3 +373,4 @@ with open('log.txt', 'a') as f:
 
 ## Else end program...
   else:
+    print("No need to change settings...")
