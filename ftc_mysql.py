@@ -373,4 +373,3 @@ with open('log.txt', 'a') as f:
 
 ## Else end program...
   else:
-    print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating off, New Flow Temperature = ", (set2), file=f)
