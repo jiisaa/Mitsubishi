@@ -10,7 +10,7 @@ from datetime import datetime
 ## Define function we call later if we need to update TT Buffer to prevent program to set TT below current Flow Temp
 def savedata():
   mydb = mysql.connector.connect(
-    host="192.168.1.61",
+    host="x.x.x.x",
     user="DatabaseUsername",
     passwd="DatabasePWD",
     database="DatabaseName"
@@ -141,6 +141,13 @@ res8 = int(myresult12[0])
 ## Check if Target Temp is not going below minimum level
 tt = res4 if res4 >= 2500 else 2500
 temp = res5 / 10
+
+## Write TT Buffer, with this we make sure program won't write lower value to TT than was last, at least we try...
+mycursor = mydb.cursor()
+sql = "UPDATE mitsubishi SET value = %s WHERE mitsubishi.id = %s"
+val = (tt, 11)
+mycursor.execute(sql, val)
+mydb.commit()
 
 mycursor.close()
 mydb.close()
