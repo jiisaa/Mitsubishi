@@ -481,6 +481,7 @@ with open('log.txt', 'a') as f:
 
 ## If Heating is on, target temp not same already set, we are not going over decided Flow Temp limit, Defrosting is off (Normal), Heating is On and Flow temp greater than Setpoint, set Flow Temp to new Target temp, tt
   elif res1 == 2 and tt != res2 and tt < (set1-100) and res3 == 0 and res8 > res2:
+    savedata()
     instrument.write_register(32, (tt), functioncode=6)
     print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 1 = ", (tt), file=f)
 
