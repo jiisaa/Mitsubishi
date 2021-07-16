@@ -8,21 +8,45 @@ import mysql.connector
 from datetime import datetime
 
 ## Define function we call later if we need to update TT Buffer
-def savedata():
-  mydb = mysql.connector.connect(
-    host="x.x.x.x",
-    user="DatabaseUsername",
-    passwd="DatabasePWD",
-    database="DatabaseName"
-  )
+def ttbufferupdate():
+  try:
+    mydb = mysql.connector.connect(
+      host="x.x.x.x",
+      user="DatabaseUsername",
+      passwd="DatabasePWD",
+      database="DatabaseName"
+    )
 
-  mycursor = mydb.cursor()
-  sql = "UPDATE mitsubishi SET value = %s WHERE mitsubishi.id = %s"
-  val = (tt, 11)
-  mycursor.execute(sql, val)
-  mydb.commit()
-  mycursor.close()
-  mydb.close()
+    mycursor = mydb.cursor()
+    sql = "UPDATE mitsubishi SET value = %s WHERE mitsubishi.id = %s"
+    val = (tt, 11)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+    mydb.close()
+    return 1
+  except:
+    return 0
+
+def ttbufferreset():
+  try:
+    mydb = mysql.connector.connect(
+      host="x.x.x.x",
+      user="DatabaseUsername",
+      passwd="DatabasePWD",
+      database="DatabaseName"
+    )
+
+    mycursor = mydb.cursor()
+    sql = "UPDATE mitsubishi SET value = %s WHERE mitsubishi.id = %s"
+    val = (set2, 11)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    mycursor.close()
+    mydb.close()
+    return 1
+  except:
+    return 0
 
 def defrost():
   mydb = mysql.connector.connect(
@@ -32,6 +56,7 @@ def defrost():
     database="DatabaseName"
   )
 
+  ## Defrost 0=Normal, 2=Defrost
   mycursor = mydb.cursor()
   mycursor.execute("SELECT value FROM talo_data WHERE position_id = 50 AND value IS NOT NULL ORDER BY id DESC LIMIT 0,1")
   myresult7 = mycursor.fetchone()
@@ -41,12 +66,18 @@ def defrost():
   return res3
 
 def timecheck():
-  if now.hour >= (set7) and now.hour <= (set8) and set9 == 2:
+  if now.hour >= set7 and now.hour <= set8 and set9 == 2:
     if res1 == 0:
-      instrument.write_register(32, (tt), functioncode=6)
-      print(now.strftime("%d/%m/%Y %H:%M:%S"),"Because Temp Rise, try to start heating and set Target Temp = ", (tt), file=f)
+      with open('log.txt', 'a') as f:
+        instrument.write_register(32, (tt), functioncode=6)
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Because Temp Rise, try to start heating and set Target Temp = ", (tt), file=f)
+        saveok = ttbufferupdate()
+        if saveok == 1:
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 6 = ", (tt), file=f)
+        else:
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Error setting New Flow Temperature 6 = ", (tt), file=f)
     else:
-      res=(set6)
+      res=set6
   else:
     res=0
   return res
@@ -59,11 +90,13 @@ def afterdhw():
     database="DatabaseName"
   )
 
+  ## Operating mode, 2=Heating, 1=Hot Water, 0=Stop
   mycursor = mydb.cursor()
   mycursor.execute("SELECT value FROM talo_data WHERE position_id = 49 AND value IS NOT NULL ORDER BY id DESC LIMIT 0,1")
   myresult5 = mycursor.fetchone()
   res1 = int(myresult5[0])
 
+  ## Maximum Flow Temperature
   mycursor = mydb.cursor()
   mycursor.execute("SELECT value FROM mitsubishi WHERE id = 2")
   myresultset1 = mycursor.fetchone()
@@ -71,22 +104,64 @@ def afterdhw():
 
   mycursor.close()
   mydb.close()
-  
+
   if res1 == 2:
     if tt > set1-150:
       res=1
-	else:
-	  res=0
+    else:
+      res=0
   else:
     res=0
   return res
 
-## Settings for mysql connection
+def aggressivemode():
   mydb = mysql.connector.connect(
     host="x.x.x.x",
     user="DatabaseUsername",
     passwd="DatabasePWD",
     database="DatabaseName"
+  )
+
+  ## Flow Temperature – Zone 1 (signed) (THW6)
+  mycursor = mydb.cursor()
+  mycursor.execute("SELECT value FROM talo_data WHERE position_id = 46 AND value IS NOT NULL ORDER BY id DESC LIMIT 0,1")
+  myresult8 = mycursor.fetchone()
+  global res4
+  res4 = int(myresult8[0])
+
+  ## Operating mode, 2=Heating, 1=Hot Water, 0=Stop
+  mycursor = mydb.cursor()
+  mycursor.execute("SELECT value FROM talo_data WHERE position_id = 49 AND value IS NOT NULL ORDER BY id DESC LIMIT 0,1")
+  myresult5 = mycursor.fetchone()
+  global res1
+  res1 = int(myresult5[0])
+
+  ## Flow Temperature Setpoint – Zone 1
+  mycursor = mydb.cursor()
+  mycursor.execute("SELECT value FROM talo_data WHERE position_id = 51 AND value IS NOT NULL ORDER BY id DESC LIMIT 0,1")
+  myresult6 = mycursor.fetchone()
+  global res2
+  res2 = int(myresult6[0])
+
+  ## TT Buffer read
+  mycursor = mydb.cursor()
+  mycursor.execute("SELECT value FROM mitsubishi WHERE id = 11")
+  myresult12 = mycursor.fetchone()
+  global res8
+  res8 = int(myresult12[0])
+
+  mycursor.close()
+  mydb.close()
+
+  tt=res4
+  return tt
+
+## Settings for mysql connection
+mydb = mysql.connector.connect(
+  host="x.x.x.x",
+  user="DatabaseUsername",
+  passwd="DatabasePWD",
+  database="DatabaseName"
 )
 
 ## Read Settings
@@ -229,13 +304,6 @@ res8 = int(myresult12[0])
 tt = res4 if res4 >= 2500 else 2500
 temp = res5 / 10
 
-## Write TT Buffer, with this we make sure program won't write lower value to TT than was last, at least we try...
-mycursor = mydb.cursor()
-sql = "UPDATE mitsubishi SET value = %s WHERE mitsubishi.id = %s"
-val = (tt, 11)
-mycursor.execute(sql, val)
-mydb.commit()
-
 mycursor.close()
 mydb.close()
 
@@ -251,7 +319,7 @@ instrument.serial.timeout  = 5
 #  instrument.write_register(32, (set1), functioncode=6)
 #  print("New set temperature 1= ", (set1))
 
-## Check if Night control on and rise set1 temp if needed
+## Check if Night control on and rise Maximum Flow Temperature (set1) temp if needed
 now = datetime.now()
 res = timecheck()
 set1 = set1 + res
@@ -264,25 +332,37 @@ with open('log.txt', 'a') as f:
 
 ## If Operating mode was Heating
     if res6 == 2:
-      if temp < 0:
-        if res2 < set1 + 300:
+      if temp < 5:
+        if set1 < res2 - 300:
           instrument.write_register(32, (res2 + 300), functioncode=6)
-          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, change Flow temp 5c higher to ",(res2 + 300), file=f)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, Temp below 5c, change Flow temp 3c higher to ",(res2 + 300), file=f)
+        else:
+          instrument.write_register(32, (set1), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, Temp below 5c, change Flow temp to max ",(set1), file=f)
       if temp >= 5:
-        if res2 < set1 + 500:
+        if set1 < res2 - 500:
           instrument.write_register(32, (res2 + 500), functioncode=6)
-          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, change Flow temp 5c higher to ",(res2 + 500), file=f)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, Temp 5c or over, change Flow temp 5c higher to ",(res2 + 500), file=f)
+        else:
+          instrument.write_register(32, (set1), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode was Hot Water before Heating, Temp 5c or over, change Flow temp to max ",(set1), file=f)
 
 ## If flow temp goes below set temp in DHW mode, set new Flow target temp
     if res4 <= res2 and res2 < res4 + 100:
       if temp < 5:
-        instrument.write_register(32, (res2 + 300), functioncode=6)
-        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, change Flow temp 3c higher to ",(res2 + 300), file=f)
-#        time.sleep(240)
+        if set1 < res2 - 300:
+          instrument.write_register(32, (res2 + 300), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, Temp below 5c, change Flow temp 3c higher to ",(res2 + 300), file=f)
+        else:
+          instrument.write_register(32, (set1), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, Temp below 5c, change Flow temp to max ",(set1), file=f)
       if temp >= 5:
-        instrument.write_register(32, (res2 + 500), functioncode=6)
-        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, change Flow temp 5c higher to ",(res2 + 500), file=f)
-#        time.sleep(180)
+        if set1 < res2 - 500:
+          instrument.write_register(32, (res2 + 500), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, Temp 5c or over, change Flow temp 5c higher to ",(res2 + 500), file=f)
+        else:
+          instrument.write_register(32, (set1), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Flow temp went below Target Temp, Temp 5c or over, change Flow temp to max ",(set1), file=f)
     else:
       if temp < 5:
         print(now.strftime("%d/%m/%Y %H:%M:%S"),"Operating mode Hot Water, Outdoor less than 5c, Flow temp rised already, wait for Heat mode", file=f)
@@ -293,10 +373,10 @@ with open('log.txt', 'a') as f:
 
 ## If Heating is on, target temp over max temp because change after Hot water, first set flow temp 0.5c below Flow Temp wait and set Flow Temp to max set
   elif res1 == 2 and res2 > (set1-150) and res3 == 0:
-	res = 1
-    while res == 1
-	  tt=tt-50
-	  instrument.write_register(32, (tt), functioncode=6)
+    res = 1
+    while res == 1:
+      tt=tt-50
+      instrument.write_register(32, (tt), functioncode=6)
       print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature after DHW 1 = ", (tt), file=f)
       time.sleep(300)
       res = afterdhw()
@@ -530,27 +610,74 @@ with open('log.txt', 'a') as f:
         instrument.write_register(32, (tt), functioncode=6)
         print(now.strftime("%d/%m/%Y %H:%M:%S"),"Outdoor 30C, Target temp = ", (tt), file=f)
 
-## If Oudoor temp +5 or more, set Flow Temp +2c immediately to prevent turning off
-  elif temp > 5 and res1 == 2 and res3 == 0 and tt < set2+100:
+## If Oudoor temp over +5 and below +10, set Flow Temp +3c immediately to prevent turning off
+  elif temp > 5 and temp < 10 and res1 == 2 and res3 == 0 and tt < set2+100:
     tt = set2+200
-    savedata()
-    instrument.write_register(32, (tt), functioncode=6)
-    print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 2 = ", (tt), file=f)
+    if tt != res2:
+      instrument.write_register(32, (tt), functioncode=6)
+      saveok = ttbufferupdate()
+      if saveok == 1:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 3 = ", (tt), file=f)
+      else:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Error setting New Flow Temperature 3 = ", (tt), file=f)
 
-## If Heating is on, target temp not same already set, we are not going over decided Flow Temp limit, Defrosting is off (Normal), Heating is On and Flow Temp setpoint greater than Flow Temp, set Flow Temp to new Target temp, tt
-  elif res1 == 2 and tt < (set1-100) and res3 == 0 and tt != res2:
-    if set5 == 2 and res8 > res2:
+## If Oudoor temp +10 or more, set Flow Temp +5c immediately to prevent turning off
+  elif temp >= 10 and temp < 15 and res1 == 2 and res3 == 0 and tt < set2+100:
+    tt = set2+250
+    if tt != res2:
       instrument.write_register(32, (tt), functioncode=6)
-      print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 1 = ", (tt), file=f)
-    if set5 == 1:
+      saveok = ttbufferupdate()
+      if saveok == 1:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 4 = ", (tt), file=f)
+      else:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Error setting New Flow Temperature 4 = ", (tt), file=f)
+
+## If Oudoor temp +15 or more, set Flow Temp +5c immediately to prevent turning off
+  elif temp >= 15 and res1 == 2 and res3 == 0 and tt < set2+100:
+    tt = set2+300
+    if tt != res2:
       instrument.write_register(32, (tt), functioncode=6)
-      print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 3 = ", (tt), file=f)
+      saveok = ttbufferupdate()
+      if saveok == 1:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 5 = ", (tt), file=f)
+      else:
+        print(now.strftime("%d/%m/%Y %H:%M:%S"),"Error setting New Flow Temperature 5 = ", (tt), file=f)
+
+## If Heating is on and Defrosting is off (Normal), target temp not same already set, we are not going over decided Flow Temp limit and Flow Temp setpoint greater than Flow Temp, set Flow Temp to new Target temp, tt
+  elif res1 == 2 and res3 == 0:
+## If Aggressive mode ON
+    if set5 == 2:
+## Stay in While loop until target temp over max temp set
+      while (tt < (set1-100)):
+## If Heating still on, target temp not same already set and target temp more than in buffer
+        if res1 == 2 and tt != res2 and tt > res8:
+          instrument.write_register(32, (tt), functioncode=6)
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 1 = ", (tt), file=f)
+		  time.sleep(10)
+          saveok = ttbufferupdate()
+          tt = aggressivemode()
+## Exit While loop if not heating
+        elif res1 != 2:
+          print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating ended, leave aggressive mode.", file=f)
+          break
+        else:
+          print("No need to change settings...")
+      print("No need to change settings...")
+## If Aggressive mode OFF, we are not going over decided Flow Temp limit and target temp not same already set
+    if set5 == 1 and tt < (set1-100) and tt != res2:
+      instrument.write_register(32, (tt), functioncode=6)
+      print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 2 = ", (tt), file=f)
     else:
       print("No need to change settings...")
+
 ## If Heating is off and Defrosting is off (Normal) we think system has reached maximum set temp and system has turn off heating and is waiting for hysteresis to go down, set Flow temp to min
   elif res1 == 0 and res3 != 2 and res2 != set2:
     instrument.write_register(32, (set2), functioncode=6)
-    print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating off, New Flow Temperature = ", (set2), file=f)
+    ttbufferreset = ttbufferreset()
+    if ttbufferreset == 1:
+      print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating off, TT Buffer resetted, New Flow Temperature = ", (set2), file=f)
+    else:
+      print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating off, error resetting TT Buffer, new Flow Temperature = ", (set2), file=f)
 
 ## Else end program...
   else:
