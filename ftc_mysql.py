@@ -653,15 +653,15 @@ with open('log.txt', 'a') as f:
         if res1 == 2 and tt != res2 and tt > res8:
           instrument.write_register(32, (tt), functioncode=6)
           print(now.strftime("%d/%m/%Y %H:%M:%S"),"New Flow Temperature 1 = ", (tt), file=f)
-		  time.sleep(10)
-          saveok = ttbufferupdate()
-          tt = aggressivemode()
 ## Exit While loop if not heating
         elif res1 != 2:
           print(now.strftime("%d/%m/%Y %H:%M:%S"),"Heating ended, leave aggressive mode.", file=f)
           break
         else:
           print("No need to change settings...")
+        time.sleep(10)
+        saveok = ttbufferupdate()
+        tt = aggressivemode()
       print("No need to change settings...")
 ## If Aggressive mode OFF, we are not going over decided Flow Temp limit and target temp not same already set
     if set5 == 1 and tt < (set1-100) and tt != res2:
